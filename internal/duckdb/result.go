@@ -205,26 +205,67 @@ func (r *Result) ValueNull(column int64, row int32) bool {
 	return !v.RowValid(off)
 }
 
-// ValueString returns the string value at the given column and row.
+// ValueString returns the value at the given column and row rendered as a
+// string. Non-VARCHAR columns are converted to text, matching the behavior of
+// the deprecated duckdb_value_varchar this API used to wrap.
 func (r *Result) ValueString(column int64, row int32) (string, bool) {
-	b, ok := r.ValueVarchar(column, row)
+	colType := r.ColumnType(column)
+	switch colType {
+	case DuckDBTypeVarchar, DuckDBTypeBlob:
+		b, ok := r.valueBytes(column, row)
+		if !ok {
+			return "", false
+		}
+		return string(b), true
+	}
+	val, ok := r.ValueNested(column, row)
 	if !ok {
 		return "", false
 	}
-	return string(b), true
+	return stringifyValue(val, colType), true
+}
+
+// stringifyValue renders a decoded Go value as DuckDB-style text.
+func stringifyValue(val any, colType DuckDBType) string {
+	switch v := val.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	case time.Time:
+		switch colType {
+		case DuckDBTypeDate:
+			return v.Format("2006-01-02")
+		case DuckDBTypeTime:
+			return v.Format("15:04:05.999999")
+		default: // timestamps
+			return v.Format("2006-01-02 15:04:05.999999")
+		}
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 // ValueVarchar returns the raw bytes of a VARCHAR/JSON value.
 func (r *Result) ValueVarchar(column int64, row int32) ([]byte, bool) {
-	v, off, ok := r.cell(column, row)
-	if !ok || !v.RowValid(off) {
+	if r.ColumnType(column) != DuckDBTypeVarchar {
 		return nil, false
 	}
-	return v.bytesAt(off), true
+	return r.valueBytes(column, row)
 }
 
 // ValueBlob returns the raw bytes of a BLOB value.
 func (r *Result) ValueBlob(column int64, row int32) ([]byte, bool) {
+	if r.ColumnType(column) != DuckDBTypeBlob {
+		return nil, false
+	}
+	return r.valueBytes(column, row)
+}
+
+// valueBytes reads a duckdb_string_t cell (VARCHAR/BLOB physical layout). The
+// caller must have verified the column's type: interpreting any other physical
+// layout as a string_t reads garbage and may dereference a wild pointer.
+func (r *Result) valueBytes(column int64, row int32) ([]byte, bool) {
 	v, off, ok := r.cell(column, row)
 	if !ok || !v.RowValid(off) {
 		return nil, false
