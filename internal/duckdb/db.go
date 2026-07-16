@@ -85,7 +85,9 @@ type DB struct {
 
 	// Data Chunk interface functions.
 	// NOTE: duckdb_fetch_chunk and duckdb_result_return_type take duckdb_result BY VALUE.
-	// This requires purego >= v0.10.0 on Linux (struct arguments were darwin-only before).
+	// purego supports struct arguments only on darwin/linux (amd64/arm64). On Windows the
+	// large struct is passed by hidden pointer per the x64 ABI, so these are registered
+	// differently per platform (see registerResultByValueFuncs).
 	FetchChunk              func(DuckDBResultRaw) DuckDBDataChunk
 	ResultReturnType        func(DuckDBResultRaw) DuckDBResultType
 	CreateDataChunk         func(*DuckDBLogicalType, int64) DuckDBDataChunk
@@ -209,9 +211,10 @@ func NewDB(path string) (*DB, error) {
 	purego.RegisterLibFunc(&db.IsNullValue, lib, "duckdb_is_null_value")
 	purego.RegisterLibFunc(&db.CreateNullValue, lib, "duckdb_create_null_value")
 
-	// Register Data Chunk interface functions
-	purego.RegisterLibFunc(&db.FetchChunk, lib, "duckdb_fetch_chunk")
-	purego.RegisterLibFunc(&db.ResultReturnType, lib, "duckdb_result_return_type")
+	// Register Data Chunk interface functions.
+	// duckdb_fetch_chunk and duckdb_result_return_type take duckdb_result BY VALUE,
+	// which purego handles differently per platform (see registerResultByValueFuncs).
+	registerResultByValueFuncs(db, lib)
 	// duckdb_result_get_chunk / _chunk_count / _is_streaming are deprecated; use FetchChunk.
 	purego.RegisterLibFunc(&db.CreateDataChunk, lib, "duckdb_create_data_chunk")
 	purego.RegisterLibFunc(&db.DestroyDataChunk, lib, "duckdb_destroy_data_chunk")
