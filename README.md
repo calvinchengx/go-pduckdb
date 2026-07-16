@@ -5,6 +5,16 @@
 A DuckDB module for Go which doesn't require CGO.
 Uses [purego](https://github.com/ebitengine/purego) to interface with DuckDB's native library.
 
+## Why go-pduckdb?
+
+Existing DuckDB drivers for Go rely on CGO and compile or link DuckDB into your binary. go-pduckdb is an independent implementation that takes a different approach: no CGO, loading the DuckDB shared library at runtime via [purego](https://github.com/ebitengine/purego). This gives you:
+
+- **`CGO_ENABLED=0` builds** — no C toolchain, simple cross-compilation, works in build environments where CGO is unavailable or unwanted
+- **Fast builds and small binaries** — DuckDB is not compiled or linked into your binary
+- **DuckDB upgrades without recompiling** — swap the shared library (e.g. `brew upgrade duckdb`) and your existing binary uses it
+
+In short, go-pduckdb moves the DuckDB dependency from build time to run time — your program needs `libduckdb` present on the machine where it runs (see [Installation](#installation)).
+
 ## Features
 
 - Pure Go implementation - no CGO required
