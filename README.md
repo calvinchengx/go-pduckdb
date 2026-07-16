@@ -17,6 +17,8 @@ Uses [purego](https://github.com/ebitengine/purego) to interface with DuckDB's n
 - Support for prepared statements with parameter type inference
 - Transaction support
 
+See [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md) for the full supported feature matrix (platforms, database/sql interfaces, and data types).
+
 ## Installation
 
 ```bash
@@ -47,6 +49,8 @@ For other Linux, Check official instruction: [Building DuckDB](https://duckdb.or
 
 ### Windows
 Download the DuckDB CLI from the [official website](https://duckdb.org/docs/installation/) and place the DLL in your system path.
+
+Note: Windows support relies on an ABI-level workaround for purego's lack of struct-by-value arguments on Windows — see the [Windows workaround](./docs/COMPATIBILITY.md#windows-workaround) section in the compatibility docs.
 
 ## Library Path Configuration
 
@@ -216,6 +220,8 @@ This covers:
 - The nested types **LIST**, **ARRAY**, **STRUCT** and **MAP**, decoded to
   `[]any`, `map[string]any` and `[]duckdb.MapEntry` respectively (recursively,
   so lists of structs etc. work).
+
+See [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md) for the full per-type matrix.
 
 ### Unsupported types (yet)
 
