@@ -1,0 +1,27 @@
+# AI code review for this repo's PRs, delegated to klein-cli's reusable
+# workflow (github.com/fpt/klein-cli). The klein binary is installed from its
+# latest release; all git/gh interaction happens inside that action.
+#
+# Trust model: `on: pull_request` (NOT pull_request_target) plus the same-repo
+# `if` gate below means the API-key secret is only exposed to code from
+# contributors who already have push access. Fork PRs get no secrets and are
+# skipped. Do not switch to pull_request_target while checking out the PR head.
+name: AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    uses: fpt/klein-cli/.github/workflows/ai-review-reusable.yml@main
+    with:
+      backend: openai
+      language: en
+    secrets:
+      openai-api-key: ${{ secrets.OPENAI_API_KEY }}
