@@ -238,6 +238,8 @@ func stringifyValue(val any, colType DuckDBType) string {
 			return v.Format("2006-01-02")
 		case DuckDBTypeTime:
 			return v.Format("15:04:05.999999")
+		case DuckDBTypeTimeTZ:
+			return v.Format("15:04:05.999999-07:00")
 		default: // timestamps
 			return v.Format("2006-01-02 15:04:05.999999")
 		}
@@ -390,6 +392,18 @@ func (r *Result) ValueTime(column int64, row int32) (time.Time, bool) {
 		return time.Time{}, false
 	}
 	return timeMicrosToTime(vectorValue[int64](v, off)), true
+}
+
+// ValueTimeTZ returns the TIME WITH TIME ZONE value at the given column and
+// row. The returned time.Time carries the time-of-day and a fixed-offset
+// location; as with ValueTime, only the clock and zone components are
+// meaningful.
+func (r *Result) ValueTimeTZ(column int64, row int32) (time.Time, bool) {
+	v, off, ok := r.cell(column, row)
+	if !ok || !v.RowValid(off) {
+		return time.Time{}, false
+	}
+	return timeTZToTime(vectorValue[uint64](v, off)), true
 }
 
 // ValueTimestamp returns the timestamp value at the given column and row.

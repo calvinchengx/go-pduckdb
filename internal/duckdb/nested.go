@@ -99,6 +99,8 @@ func decodeValue(db *DB, v *Vector, i int, lt DuckDBLogicalType) any {
 		return dateDaysToTime(vectorValue[int32](v, i))
 	case DuckDBTypeTime:
 		return timeMicrosToTime(vectorValue[int64](v, i))
+	case DuckDBTypeTimeTZ:
+		return timeTZToTime(vectorValue[uint64](v, i))
 	case DuckDBTypeTimestamp, DuckDBTypeTimestampTZ:
 		return timestampMicrosToTime(vectorValue[int64](v, i))
 	case DuckDBTypeTimestampS:
@@ -118,7 +120,7 @@ func decodeValue(db *DB, v *Vector, i int, lt DuckDBLogicalType) any {
 	case DuckDBTypeMap:
 		return decodeMap(db, v, i)
 	default:
-		// UNION, BIT, VARINT, TIME_TZ, ... not decoded yet.
+		// UNION, BIT, VARINT, ... not decoded yet.
 		return nil
 	}
 }
@@ -257,6 +259,29 @@ func dateDaysToTime(days int32) time.Time {
 func timeMicrosToTime(micros int64) time.Time {
 	now := time.Now().UTC()
 	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	return midnight.Add(time.Duration(micros) * time.Microsecond)
+}
+
+// DuckDB TIME WITH TIME ZONE (dtime_tz_t) packs the time-of-day and its UTC
+// offset into a single 64-bit value: the high 40 bits hold microseconds since
+// midnight, the low 24 bits hold the UTC offset in seconds biased by
+// maxTimeTZOffset (i.e. stored as maxTimeTZOffset - offset).
+const (
+	timeTZOffsetBits = 24
+	timeTZOffsetMask = (1 << timeTZOffsetBits) - 1
+	maxTimeTZOffset  = 16*60*60 - 1 // ±15:59:59, the DuckDB offset bias
+)
+
+// timeTZToTime converts a DuckDB TIME WITH TIME ZONE value to a time.Time whose
+// clock component is the time-of-day and whose location carries the UTC offset.
+// As with TIME, only the clock and zone components are meaningful; the date is
+// today's UTC date.
+func timeTZToTime(bits uint64) time.Time {
+	micros := int64(bits >> timeTZOffsetBits)
+	offsetSec := maxTimeTZOffset - int32(bits&timeTZOffsetMask)
+	zone := time.FixedZone("", int(offsetSec))
+	now := time.Now().In(zone)
+	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, zone)
 	return midnight.Add(time.Duration(micros) * time.Microsecond)
 }
 

@@ -73,6 +73,7 @@ Result values are decoded through DuckDB's data-chunk / vector API.
 | UUID | `string` | |
 | ENUM | `string` | Dictionary value |
 | DATE / TIME | `time.Time` | |
+| TIME WITH TIME ZONE | `time.Time` | Clock component + fixed-offset zone; the date component is not meaningful |
 | TIMESTAMP / TIMESTAMP_S / TIMESTAMP_MS / TIMESTAMP_NS | `time.Time` | UTC |
 | TIMESTAMP WITH TIME ZONE | `time.Time` | |
 | INTERVAL | `string` | |
@@ -81,7 +82,6 @@ Result values are decoded through DuckDB's data-chunk / vector API.
 | MAP | `[]MapEntry` (`{Key, Value any}`) | Recursive. Note: `MapEntry` is defined in an internal package, so it cannot be referenced by name from user code yet |
 | UNION | ❌ | Scans as `NULL` |
 | BIT / VARINT | ❌ | Scans as `NULL` |
-| TIME WITH TIME ZONE | ❌ | Scans as `NULL` |
 
 ## Parameter conversions (Go → DuckDB)
 
