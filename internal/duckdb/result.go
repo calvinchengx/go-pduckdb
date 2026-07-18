@@ -238,6 +238,8 @@ func stringifyValue(val any, colType DuckDBType) string {
 			return v.Format("2006-01-02")
 		case DuckDBTypeTime:
 			return v.Format("15:04:05.999999")
+		case DuckDBTypeTimeTZ:
+			return v.Format("15:04:05.999999-07:00")
 		default: // timestamps
 			return v.Format("2006-01-02 15:04:05.999999")
 		}
@@ -392,6 +394,18 @@ func (r *Result) ValueTime(column int64, row int32) (time.Time, bool) {
 	return timeMicrosToTime(vectorValue[int64](v, off)), true
 }
 
+// ValueTimeTZ returns the TIME WITH TIME ZONE value at the given column and
+// row. The returned time.Time carries the time-of-day and a fixed-offset
+// location; as with ValueTime, only the clock and zone components are
+// meaningful.
+func (r *Result) ValueTimeTZ(column int64, row int32) (time.Time, bool) {
+	v, off, ok := r.cell(column, row)
+	if !ok || !v.RowValid(off) {
+		return time.Time{}, false
+	}
+	return timeTZToTime(vectorValue[uint64](v, off)), true
+}
+
 // ValueTimestamp returns the timestamp value at the given column and row.
 // DuckDB stores TIMESTAMP as microseconds since the Unix epoch.
 func (r *Result) ValueTimestamp(column int64, row int32) (time.Time, bool) {
@@ -447,6 +461,16 @@ func (r *Result) ValueEnumString(column int64, row int32) (string, bool) {
 		return "", false
 	}
 	return decodeEnum(r.Db, v, off, r.ColumnLogicalType(column)), true
+}
+
+// ValueVarintString returns a VARINT (arbitrary-precision integer) value
+// formatted as its decimal string.
+func (r *Result) ValueVarintString(column int64, row int32) (string, bool) {
+	v, off, ok := r.cell(column, row)
+	if !ok || !v.RowValid(off) {
+		return "", false
+	}
+	return decodeVarint(v.bytesAt(off)), true
 }
 
 // DecimalInfo returns the precision and scale for decimal types

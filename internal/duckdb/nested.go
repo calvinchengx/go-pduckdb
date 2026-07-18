@@ -99,6 +99,8 @@ func decodeValue(db *DB, v *Vector, i int, lt DuckDBLogicalType) any {
 		return dateDaysToTime(vectorValue[int32](v, i))
 	case DuckDBTypeTime:
 		return timeMicrosToTime(vectorValue[int64](v, i))
+	case DuckDBTypeTimeTZ:
+		return timeTZToTime(vectorValue[uint64](v, i))
 	case DuckDBTypeTimestamp, DuckDBTypeTimestampTZ:
 		return timestampMicrosToTime(vectorValue[int64](v, i))
 	case DuckDBTypeTimestampS:
@@ -117,8 +119,10 @@ func decodeValue(db *DB, v *Vector, i int, lt DuckDBLogicalType) any {
 		return decodeStruct(db, v, i, lt)
 	case DuckDBTypeMap:
 		return decodeMap(db, v, i)
+	case DuckDBTypeVarInt:
+		return decodeVarint(v.bytesAt(i))
 	default:
-		// UNION, BIT, VARINT, TIME_TZ, ... not decoded yet.
+		// UNION, BIT, ... not decoded yet.
 		return nil
 	}
 }
@@ -212,6 +216,43 @@ func decodeDecimal(db *DB, v *Vector, i int, lt DuckDBLogicalType) string {
 	}
 }
 
+// varintHeaderSize is the fixed size of a DuckDB VARINT header (3 bytes).
+const varintHeaderSize = 3
+
+// decodeVarint decodes a DuckDB VARINT (arbitrary-precision integer) into its
+// decimal string. The physical layout is a string_t: a 3-byte big-endian
+// header followed by the magnitude bytes. The header's top bit is the sign
+// (1 = positive), and the remaining 23 bits hold the magnitude byte count. For
+// negative values both the header and the magnitude bytes are stored as their
+// one's complement.
+func decodeVarint(b []byte) string {
+	if len(b) < varintHeaderSize {
+		return ""
+	}
+	header := uint32(b[0])<<16 | uint32(b[1])<<8 | uint32(b[2])
+	negative := header&0x800000 == 0
+	if negative {
+		header = ^header & 0xFFFFFF
+	}
+	dataLen := int(header & 0x7FFFFF)
+	if len(b) < varintHeaderSize+dataLen {
+		return ""
+	}
+
+	mag := make([]byte, dataLen)
+	copy(mag, b[varintHeaderSize:varintHeaderSize+dataLen])
+	if negative {
+		for i := range mag {
+			mag[i] = ^mag[i]
+		}
+	}
+	n := new(big.Int).SetBytes(mag)
+	if negative {
+		n.Neg(n)
+	}
+	return n.String()
+}
+
 // decodeEnum reads an ENUM value's label from the type's dictionary.
 func decodeEnum(db *DB, v *Vector, i int, lt DuckDBLogicalType) string {
 	if db.EnumInternalType == nil || db.EnumDictionaryValue == nil {
@@ -257,6 +298,31 @@ func dateDaysToTime(days int32) time.Time {
 func timeMicrosToTime(micros int64) time.Time {
 	now := time.Now().UTC()
 	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	return midnight.Add(time.Duration(micros) * time.Microsecond)
+}
+
+// DuckDB TIME WITH TIME ZONE (dtime_tz_t) packs the time-of-day and its UTC
+// offset into a single 64-bit value: the high 40 bits hold microseconds since
+// midnight, the low 24 bits hold the UTC offset in seconds biased by
+// maxTimeTZOffset (i.e. stored as maxTimeTZOffset - offset).
+const (
+	timeTZOffsetBits = 24
+	timeTZOffsetMask = (1 << timeTZOffsetBits) - 1
+	maxTimeTZOffset  = 16*60*60 - 1 // ±15:59:59, the DuckDB offset bias
+)
+
+// timeTZToTime converts a DuckDB TIME WITH TIME ZONE value to a time.Time whose
+// clock component is the time-of-day and whose location carries the UTC offset.
+// As with TIME, only the clock and zone components are meaningful; the date is
+// today's UTC date.
+func timeTZToTime(bits uint64) time.Time {
+	micros := int64(bits >> timeTZOffsetBits)
+	offsetSec := maxTimeTZOffset - int32(bits&timeTZOffsetMask)
+	zone := time.FixedZone("", int(offsetSec))
+	// Use today's UTC date (matching timeMicrosToTime) so the non-semantic date
+	// component is stable regardless of the offset; only clock and zone matter.
+	now := time.Now().UTC()
+	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, zone)
 	return midnight.Add(time.Duration(micros) * time.Microsecond)
 }
 

@@ -866,3 +866,94 @@ func TestUpdateStatement(t *testing.T) {
 		}
 	})
 }
+
+func TestTimeTZValue(t *testing.T) {
+	db, err := NewDuckDB(":memory:")
+	assert.NoError(t, err, "Error creating database")
+	defer db.Close()
+
+	conn, err := db.Connect()
+	assert.NoError(t, err, "Error connecting to database")
+	defer conn.Close()
+
+	err = conn.Execute(`CREATE TABLE tz (t TIMETZ);`)
+	assert.NoError(t, err, "Error creating table")
+
+	// Three offsets: positive, UTC, negative.
+	err = conn.Execute(`INSERT INTO tz VALUES
+		('12:34:56.789+05:30'),
+		('01:02:03+00:00'),
+		('23:59:59-08:00');`)
+	assert.NoError(t, err, "Error inserting values")
+
+	result, err := conn.Query("SELECT * FROM tz")
+	assert.NoError(t, err, "Error querying results")
+	defer result.Close()
+
+	cases := []struct {
+		clock      string
+		offsetSecs int
+	}{
+		{"12:34:56.789", 5*3600 + 30*60},
+		{"01:02:03", 0},
+		{"23:59:59", -8 * 3600},
+	}
+	for row, c := range cases {
+		val, ok := result.ValueTimeTZ(0, int32(row))
+		assert.True(t, ok, "Expected a TIMETZ value at row %d", row)
+		assert.Equal(t, c.clock, val.Format("15:04:05.999"), "clock mismatch at row %d", row)
+		_, offset := val.Zone()
+		assert.Equal(t, c.offsetSecs, offset, "offset mismatch at row %d", row)
+	}
+
+	// ValueString should render the offset.
+	s, ok := result.ValueString(0, 0)
+	assert.True(t, ok, "Expected a string rendering")
+	assert.Equal(t, "12:34:56.789+05:30", s, "Expected TIMETZ string with offset")
+}
+
+func TestVarintValue(t *testing.T) {
+	db, err := NewDuckDB(":memory:")
+	assert.NoError(t, err, "Error creating database")
+	defer db.Close()
+
+	conn, err := db.Connect()
+	assert.NoError(t, err, "Error connecting to database")
+	defer conn.Close()
+
+	err = conn.Execute(`CREATE TABLE v (n VARINT);`)
+	assert.NoError(t, err, "Error creating table")
+
+	// Zero, small +/-, and values well beyond int64/uint64 range.
+	err = conn.Execute(`INSERT INTO v VALUES
+		(0),
+		(12345),
+		(-12345),
+		(170141183460469231731687303715884105727),
+		(-170141183460469231731687303715884105728),
+		('99999999999999999999999999999999999999999999999999'::VARINT);`)
+	assert.NoError(t, err, "Error inserting values")
+
+	result, err := conn.Query("SELECT * FROM v ORDER BY n")
+	assert.NoError(t, err, "Error querying results")
+	defer result.Close()
+
+	want := []string{
+		"-170141183460469231731687303715884105728",
+		"-12345",
+		"0",
+		"12345",
+		"170141183460469231731687303715884105727",
+		"99999999999999999999999999999999999999999999999999",
+	}
+	for row, w := range want {
+		val, ok := result.ValueVarintString(0, int32(row))
+		assert.True(t, ok, "Expected a VARINT value at row %d", row)
+		assert.Equal(t, w, val, "VARINT mismatch at row %d", row)
+	}
+
+	// database/sql path decodes VARINT as a string too.
+	s, ok := result.ValueString(0, 5)
+	assert.True(t, ok, "Expected a string rendering")
+	assert.Equal(t, "99999999999999999999999999999999999999999999999999", s)
+}
