@@ -319,7 +319,9 @@ func timeTZToTime(bits uint64) time.Time {
 	micros := int64(bits >> timeTZOffsetBits)
 	offsetSec := maxTimeTZOffset - int32(bits&timeTZOffsetMask)
 	zone := time.FixedZone("", int(offsetSec))
-	now := time.Now().In(zone)
+	// Use today's UTC date (matching timeMicrosToTime) so the non-semantic date
+	// component is stable regardless of the offset; only clock and zone matter.
+	now := time.Now().UTC()
 	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, zone)
 	return midnight.Add(time.Duration(micros) * time.Microsecond)
 }
