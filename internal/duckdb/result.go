@@ -463,6 +463,16 @@ func (r *Result) ValueEnumString(column int64, row int32) (string, bool) {
 	return decodeEnum(r.Db, v, off, r.ColumnLogicalType(column)), true
 }
 
+// ValueVarintString returns a VARINT (arbitrary-precision integer) value
+// formatted as its decimal string.
+func (r *Result) ValueVarintString(column int64, row int32) (string, bool) {
+	v, off, ok := r.cell(column, row)
+	if !ok || !v.RowValid(off) {
+		return "", false
+	}
+	return decodeVarint(v.bytesAt(off)), true
+}
+
 // DecimalInfo returns the precision and scale for decimal types
 func (r *Result) DecimalInfo(column int64) (precision, scale int64, ok bool) {
 	if r.ColumnType(column) != DuckDBTypeDecimal {

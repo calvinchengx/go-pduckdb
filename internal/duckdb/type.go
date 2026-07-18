@@ -237,7 +237,7 @@ func (t DuckDBType) GoType() reflect.Type {
 	case DuckDBTypeAny:
 		return reflect.TypeOf(any(nil))
 	case DuckDBTypeVarInt:
-		return reflect.TypeOf(int64(0))
+		return reflect.TypeOf("")
 	case DuckDBTypeSQLNull:
 		return reflect.TypeOf(nil)
 	case DuckDBTypeStringLiteral:

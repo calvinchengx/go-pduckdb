@@ -119,8 +119,10 @@ func decodeValue(db *DB, v *Vector, i int, lt DuckDBLogicalType) any {
 		return decodeStruct(db, v, i, lt)
 	case DuckDBTypeMap:
 		return decodeMap(db, v, i)
+	case DuckDBTypeVarInt:
+		return decodeVarint(v.bytesAt(i))
 	default:
-		// UNION, BIT, VARINT, ... not decoded yet.
+		// UNION, BIT, ... not decoded yet.
 		return nil
 	}
 }
@@ -212,6 +214,43 @@ func decodeDecimal(db *DB, v *Vector, i int, lt DuckDBLogicalType) string {
 	default:
 		return ""
 	}
+}
+
+// varintHeaderSize is the fixed size of a DuckDB VARINT header (3 bytes).
+const varintHeaderSize = 3
+
+// decodeVarint decodes a DuckDB VARINT (arbitrary-precision integer) into its
+// decimal string. The physical layout is a string_t: a 3-byte big-endian
+// header followed by the magnitude bytes. The header's top bit is the sign
+// (1 = positive), and the remaining 23 bits hold the magnitude byte count. For
+// negative values both the header and the magnitude bytes are stored as their
+// one's complement.
+func decodeVarint(b []byte) string {
+	if len(b) < varintHeaderSize {
+		return ""
+	}
+	header := uint32(b[0])<<16 | uint32(b[1])<<8 | uint32(b[2])
+	negative := header&0x800000 == 0
+	if negative {
+		header = ^header & 0xFFFFFF
+	}
+	dataLen := int(header & 0x7FFFFF)
+	if len(b) < varintHeaderSize+dataLen {
+		return ""
+	}
+
+	mag := make([]byte, dataLen)
+	copy(mag, b[varintHeaderSize:varintHeaderSize+dataLen])
+	if negative {
+		for i := range mag {
+			mag[i] = ^mag[i]
+		}
+	}
+	n := new(big.Int).SetBytes(mag)
+	if negative {
+		n.Neg(n)
+	}
+	return n.String()
 }
 
 // decodeEnum reads an ENUM value's label from the type's dictionary.
