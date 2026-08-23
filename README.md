@@ -71,7 +71,15 @@ For other Linux, Check official instruction: [Building DuckDB](https://duckdb.or
 ### Windows
 Download the DuckDB CLI from the [official website](https://duckdb.org/docs/installation/) and place the DLL in your system path.
 
-Note: Windows support relies on an ABI-level workaround for purego's lack of struct-by-value arguments on Windows — see the [Windows workaround](./docs/COMPATIBILITY.md#windows-workaround) section in the compatibility docs.
+Note: Windows support relies on an ABI-level workaround for purego's lack of struct-by-value arguments on Windows — see the [Windows workaround](./docs/COMPATIBILITY.md#windows-workaround) section in the compatibility docs. Both amd64 and arm64 are supported and both run the unit tests in CI on every push.
+
+Once `duckdb.dll` is resolvable, the tests are the Go toolchain and nothing else:
+
+```powershell
+go test ./...
+```
+
+The `Makefile` is convenience rather than the build — its targets assume GNU make and a POSIX shell, so on Windows they want WSL or Git Bash. Nothing is lost by skipping it: `make test` is `go test ./...`, and the remaining targets build Docker images or run `gofumpt` and `golangci-lint`. CI invokes `go` directly for the same reason, which is what makes the Windows results mean anything.
 
 ## Library Path Configuration
 
