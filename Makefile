@@ -1,4 +1,14 @@
-.PHONY: integ
+# These targets are convenience, and they assume GNU make and a POSIX shell:
+# Linux, macOS, or WSL / Git Bash on Windows. They are not the build.
+#
+# The build and the tests are the Go toolchain alone, and run wherever Go and
+# libduckdb do. On Windows, with duckdb.dll resolvable:
+#
+#     go test ./...
+#
+# `make help` and the docker targets are the parts that want a POSIX shell.
+
+.PHONY: run test fmt lint integ integ-arm64 help
 
 run: ## Run the application
 	CGO_ENABLED=0 go run example/simple/main.go
