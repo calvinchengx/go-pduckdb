@@ -10,12 +10,34 @@ on:
 
 jobs:
   unit-tests:
+    name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - name: linux/amd64
+            os: ubuntu-latest
+            asset: libduckdb-linux-amd64.zip
+          - name: linux/arm64
+            os: ubuntu-24.04-arm
+            asset: libduckdb-linux-arm64.zip
+          - name: macos/arm64
+            os: macos-latest
+            asset: libduckdb-osx-universal.zip
+          - name: macos/amd64
+            os: macos-15-intel
+            asset: libduckdb-osx-universal.zip
+          - name: windows/amd64
+            os: windows-latest
+            asset: libduckdb-windows-amd64.zip
+          - name: windows/arm64
+            os: windows-11-arm
+            asset: libduckdb-windows-arm64.zip
 
     runs-on: ${{ matrix.os }}
+
+    env:
+      DUCKDB_VERSION: v1.5.4
 
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +51,7 @@ jobs:
       - name: Install DuckDB library (Linux)
         if: runner.os == 'Linux'
         run: |
-          curl -sSL https://github.com/duckdb/duckdb/releases/download/v1.5.4/libduckdb-linux-amd64.zip -o archive.zip
+          curl -sSL https://github.com/duckdb/duckdb/releases/download/${DUCKDB_VERSION}/${{ matrix.asset }} -o archive.zip
           sudo unzip -j archive.zip libduckdb.so -d /usr/local/lib
           sudo ldconfig
           rm archive.zip
@@ -37,7 +59,7 @@ jobs:
       - name: Install DuckDB library (macOS)
         if: runner.os == 'macOS'
         run: |
-          curl -sSL https://github.com/duckdb/duckdb/releases/download/v1.5.4/libduckdb-osx-universal.zip -o archive.zip
+          curl -sSL https://github.com/duckdb/duckdb/releases/download/${DUCKDB_VERSION}/${{ matrix.asset }} -o archive.zip
           sudo unzip -j archive.zip libduckdb.dylib -d /usr/local/lib
           rm archive.zip
 
@@ -45,7 +67,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri https://github.com/duckdb/duckdb/releases/download/v1.5.4/libduckdb-windows-amd64.zip -OutFile archive.zip
+          Invoke-WebRequest -Uri "https://github.com/duckdb/duckdb/releases/download/$env:DUCKDB_VERSION/${{ matrix.asset }}" -OutFile archive.zip
           Expand-Archive -Path archive.zip -DestinationPath "$env:RUNNER_TEMP\duckdb" -Force
           # go test runs each package with its own directory as the working directory,
           # so the DLL must be resolvable via the standard DLL search path (PATH), not cwd.
