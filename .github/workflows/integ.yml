@@ -9,7 +9,17 @@ on:
       - main
 
 jobs:
-  unit-tests:
+  integration-tests:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: glibc
+            dockerfile: ./internal/integ/Dockerfile
+          - name: musl
+            dockerfile: ./internal/integ/Dockerfile.musl
+
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +29,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build docker image
-        run: docker build -t go-pduckdb/integ -f ./internal/integ/Dockerfile .
+        run: docker build -t go-pduckdb/integ-${{ matrix.name }} -f ${{ matrix.dockerfile }} .
 
       - name: Run integration tests
-        run: docker run --rm go-pduckdb/integ
+        run: docker run --rm go-pduckdb/integ-${{ matrix.name }}

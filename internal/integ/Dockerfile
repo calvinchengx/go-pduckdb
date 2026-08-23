@@ -13,8 +13,8 @@ COPY . .
 # Set GOARCH for the build
 ENV GOARCH=${GOARCH}
 
-# Download and install DuckDB library before running tests
-# NOTE: Official DuckDB builds require glibc. Not musl.
+# Download and install DuckDB library before running tests.
+# This image is the glibc build; see Dockerfile.musl for the musl one.
 RUN curl -sSfL https://github.com/duckdb/duckdb/releases/download/v1.5.4/libduckdb-linux-${LIBARCH}.zip -o archive.zip \
     && unzip -j archive.zip libduckdb.so \
     && rm archive.zip \
