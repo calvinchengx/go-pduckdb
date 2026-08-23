@@ -1,5 +1,16 @@
 # go-pduckdb is a PureGO driver for [DuckDB](https://duckdb.org/docs/stable/clients/c/api.html)
 
+> **This is a fork** of [fpt/go-pduckdb](https://github.com/fpt/go-pduckdb) by Youichi
+> Fujimoto (MIT), maintained so that Linux, macOS and Windows are all first-class:
+> windows/arm64 support, a compile-time check on the Windows struct-by-value ABI
+> workaround, macOS amd64 and Linux arm64 back in CI, and a musl build proven
+> rather than assumed. See [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+>
+> The module path is `github.com/calvinchengx/go-pduckdb`; everything else
+> matches upstream. Changes are offered back — see
+> [fpt/go-pduckdb#37](https://github.com/fpt/go-pduckdb/pull/37) — and this fork
+> exists to be merged out of existence if they land.
+
 ## Introduction
 
 A DuckDB module for Go which doesn't require CGO.
@@ -32,7 +43,7 @@ See [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md) for the full supported feat
 ## Installation
 
 ```bash
-go get github.com/fpt/go-pduckdb
+go get github.com/calvinchengx/go-pduckdb
 ```
 
 Also, make sure to install DuckDB on your platform:
@@ -99,7 +110,7 @@ import (
 	"fmt"
 	"log"
 	
-	_ "github.com/fpt/go-pduckdb" // Import for driver registration
+	_ "github.com/calvinchengx/go-pduckdb" // Import for driver registration
 )
 
 func main() {
