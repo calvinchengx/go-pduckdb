@@ -1,4 +1,4 @@
-.PHONY: integ
+.PHONY: integ integ-musl integ-musl-arm64
 
 run: ## Run the application
 	CGO_ENABLED=0 go run example/simple/main.go
@@ -25,6 +25,14 @@ integ: ## Run integration tests
 integ-arm64: ## Run integration tests on arm64
 	docker build --platform linux/arm64 --build-arg GOARCH=arm64 --build-arg LIBARCH=arm64 -t go-pduckdb/integ-arm64 -f internal/integ/Dockerfile . && \
 	docker run --rm go-pduckdb/integ-arm64
+
+integ-musl: ## Run integration tests against the musl build of DuckDB
+	docker build --platform linux/amd64 -t go-pduckdb/integ-musl -f internal/integ/Dockerfile.musl . && \
+	docker run --rm go-pduckdb/integ-musl
+
+integ-musl-arm64: ## Run integration tests against the musl build on arm64
+	docker build --platform linux/arm64 --build-arg GOARCH=arm64 --build-arg LIBARCH=arm64 -t go-pduckdb/integ-musl-arm64 -f internal/integ/Dockerfile.musl . && \
+	docker run --rm go-pduckdb/integ-musl-arm64
 
 help: ## Display this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
