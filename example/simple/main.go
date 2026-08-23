@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	pd "github.com/fpt/go-pduckdb"
+	pd "github.com/calvinchengx/go-pduckdb"
 )
 
 func Exists(filename string) bool {

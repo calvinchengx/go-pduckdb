@@ -80,7 +80,7 @@ standard search so that putting a directory on `PATH` keeps working.
 | `ColumnTypes()`: database type name | ✅ | `RowsColumnTypeDatabaseTypeName` (e.g. `INTEGER`, `VARCHAR`) |
 | `ColumnTypes()`: nullable | ✅ | `RowsColumnTypeNullable` |
 | `ColumnTypes()`: precision & scale | ✅ | `RowsColumnTypePrecisionScale` |
-| `Result.RowsAffected()` | ⚠️ | Broken for parameterized `Exec` — see [#23](https://github.com/fpt/go-pduckdb/issues/23) |
+| `Result.RowsAffected()` | ⚠️ | Broken for parameterized `Exec` — see [#23](https://github.com/calvinchengx/go-pduckdb/issues/23) |
 | `Result.LastInsertId()` | ❌ | Not supported by DuckDB; returns an error |
 | Named parameters | ❌ | Positional only |
 

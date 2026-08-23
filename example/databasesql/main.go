@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	_ "github.com/fpt/go-pduckdb" // Import for driver registration only
+	_ "github.com/calvinchengx/go-pduckdb" // Import for driver registration only
 )
 
 func main() {

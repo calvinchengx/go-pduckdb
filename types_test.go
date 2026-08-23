@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/fpt/go-pduckdb/internal/duckdb"
+	"github.com/calvinchengx/go-pduckdb/internal/duckdb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -3,7 +3,7 @@ package pduckdb
 import (
 	"testing"
 
-	"github.com/fpt/go-pduckdb/internal/duckdb"
+	"github.com/calvinchengx/go-pduckdb/internal/duckdb"
 )
 
 // testDuckDB creates a mock DuckDB instance for testing

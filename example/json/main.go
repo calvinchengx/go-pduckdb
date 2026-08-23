@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	_ "github.com/fpt/go-pduckdb" // Import for driver registration
+	_ "github.com/calvinchengx/go-pduckdb" // Import for driver registration
 )
 
 // Person represents a person with name, age, and custom attributes

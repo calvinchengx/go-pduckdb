@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"log"
 
-	_ "github.com/fpt/go-pduckdb"
+	_ "github.com/calvinchengx/go-pduckdb"
 )
 
 func main() {

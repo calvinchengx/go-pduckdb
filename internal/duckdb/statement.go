@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/fpt/go-pduckdb/internal/convert"
+	"github.com/calvinchengx/go-pduckdb/internal/convert"
 	"github.com/pkg/errors"
 )
 

@@ -2,7 +2,7 @@
 package pduckdb
 
 import (
-	"github.com/fpt/go-pduckdb/internal/duckdb"
+	"github.com/calvinchengx/go-pduckdb/internal/duckdb"
 )
 
 // DuckDB represents a DuckDB database instance
