@@ -66,6 +66,19 @@ search, which reaches the current directory and `PATH`, and it also lets a
 DuckDB DLL resolve dependencies sitting beside it. A bare name still uses the
 standard search so that putting a directory on `PATH` keeps working.
 
+## Opening a database
+
+| Feature | Status | Notes |
+|---|---|---|
+| Path | ✅ | `sql.Open("duckdb", "warehouse.duckdb")`, or `:memory:` |
+| Configuration options | ✅ | As a DSN query string: `"warehouse.duckdb?access_mode=READ_ONLY&threads=2"` |
+| Read-only | ✅ | `access_mode=READ_ONLY` — the database refuses writes, rather than the caller intending not to make any |
+
+Options go through `duckdb_open_ext`; a path with no `?` uses `duckdb_open`
+unchanged. The **last** `?` separates path from options, so a database file
+whose name contains one is still reachable. An option DuckDB does not
+recognise fails the open with DuckDB's own message rather than being ignored.
+
 ## database/sql driver interface
 
 | Feature | Status | Notes |
