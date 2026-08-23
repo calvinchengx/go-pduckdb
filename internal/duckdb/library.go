@@ -51,18 +51,37 @@ func getLibraryPaths() []string {
 	case "linux":
 		locations = getLinuxLibraryPaths()
 	case "windows":
-		// Windows standard locations - prioritize current directory as it's the most likely location
-		currentDir, err := os.Getwd()
-		if err == nil {
-			locations = append(locations, filepath.Join(currentDir, "duckdb.dll"))
-		}
-		// Then add other standard locations
-		locations = append(locations,
-			"duckdb.dll", // Current directory (relative path)
-			filepath.Join(os.Getenv("ProgramFiles"), "DuckDB", "duckdb.dll"),
-			filepath.Join(os.Getenv("ProgramFiles(x86)"), "DuckDB", "duckdb.dll"),
-		)
+		locations = getWindowsLibraryPaths()
 	}
+
+	return locations
+}
+
+// getWindowsLibraryPaths returns a list of paths to search for the DuckDB DLL
+// on Windows.
+//
+// The executable's own directory comes first: it is the one location a shipped
+// binary can rely on, and unlike the working directory it does not change with
+// however the program happened to be launched. The working directory is still
+// searched, right after, because that is where a DLL dropped next to a script
+// or unzipped for a quick run ends up.
+func getWindowsLibraryPaths() []string {
+	locations := []string{}
+
+	if exe, err := os.Executable(); err == nil {
+		locations = append(locations, filepath.Join(filepath.Dir(exe), "duckdb.dll"))
+	}
+	if currentDir, err := os.Getwd(); err == nil {
+		locations = append(locations, filepath.Join(currentDir, "duckdb.dll"))
+	}
+
+	locations = append(locations,
+		filepath.Join(os.Getenv("ProgramFiles"), "DuckDB", "duckdb.dll"),
+		filepath.Join(os.Getenv("ProgramFiles(x86)"), "DuckDB", "duckdb.dll"),
+		// A bare name last, so the standard search -- PATH included -- is the
+		// fallback rather than the first thing tried.
+		"duckdb.dll",
+	)
 
 	return locations
 }
