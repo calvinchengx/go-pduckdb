@@ -7,7 +7,9 @@
 > rather than assumed. See [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 >
 > The module path is `github.com/calvinchengx/go-pduckdb`; everything else
-> matches upstream. Changes are offered back — see
+> matches upstream. Releases are tagged in upstream's numbering with a fork
+> suffix — `v0.2.1-calvinchengx.1` sits above upstream's `v0.2.0` and below any
+> future upstream `v0.2.1`, so a version number never claims to be theirs. Changes are offered back — see
 > [fpt/go-pduckdb#37](https://github.com/fpt/go-pduckdb/pull/37) — and this fork
 > exists to be merged out of existence if they land.
 
