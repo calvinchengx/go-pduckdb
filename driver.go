@@ -211,8 +211,20 @@ func (c *Conn) Ping(ctx context.Context) error {
 }
 
 // Close closes the connection.
+//
+// The connection is disconnected before the database is closed, and in that
+// order. DuckDB's database instance is shared with every connection open on
+// it, so closing the database while a connection still holds a reference
+// leaves the instance -- and its handle on the file -- alive. POSIX hides
+// that: its advisory locks are per-process, so the same process can reopen
+// the file regardless. Windows does not, and refuses the second open with
+// "used by another process".
 func (c *Conn) Close() error {
-	c.db.Close() // This will close the connection as well
+	if c.conn != nil {
+		c.conn.Close()
+		c.conn = nil
+	}
+	c.db.Close()
 	return nil
 }
 

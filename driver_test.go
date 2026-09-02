@@ -2,6 +2,7 @@ package pduckdb
 
 import (
 	"database/sql"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -956,4 +957,27 @@ func TestVarintValue(t *testing.T) {
 	s, ok := result.ValueString(0, 5)
 	assert.True(t, ok, "Expected a string rendering")
 	assert.Equal(t, "99999999999999999999999999999999999999999999999999", s)
+}
+
+// Closing a connection must disconnect it, not just close the database.
+// A leaked connection keeps DuckDB's database instance -- and its handle on
+// the file -- alive, which on Windows makes the file unopenable again. This
+// asserts our end of that: the platform oracle is the Windows CI matrix,
+// where TestReadOnlyRefusesAWrite failed for exactly this reason.
+func TestClosingAConnectionDisconnectsIt(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "w.duckdb")
+
+	opened, err := (&Driver{}).Open(path)
+	if err != nil {
+		t.Skipf("no DuckDB library available: %v", err)
+	}
+	conn, ok := opened.(*Conn)
+	assert.True(t, ok, "Driver.Open should return a *Conn")
+	assert.NotNil(t, conn.conn, "an open connection should have a handle")
+
+	assert.NoError(t, conn.Close())
+	assert.Nil(t, conn.conn, "Close should disconnect, not only close the database")
+
+	// database/sql closes once, but a double close must not double-free.
+	assert.NoError(t, conn.Close())
 }
