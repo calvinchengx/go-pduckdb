@@ -141,7 +141,7 @@ Result values are decoded through DuckDB's data-chunk / vector API.
 
 | Requirement | Version | Notes |
 |---|---|---|
-| Go | ≥ 1.24 | |
+| Go | ≥ 1.27.3 | |
 | purego | ≥ v0.10.0 | v0.10.0 added struct-by-value arguments on Linux, needed for `duckdb_fetch_chunk` |
 | DuckDB shared library | v1.5.x | CI tests against v1.5.4; nearby versions generally work since the C API is stable |
 | `libstdc++` | — | Only on musl images (Alpine, distroless static): `libduckdb.so` links against it and a musl base does not carry it |
