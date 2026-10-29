@@ -1,4 +1,4 @@
-FROM golang:1.24.2 AS builder
+FROM golang:1.27.3 AS builder
 
 # Add build arguments for architecture
 ARG GOARCH=amd64
